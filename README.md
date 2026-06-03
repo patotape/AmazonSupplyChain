@@ -1,1 +1,2 @@
-# AmazonSupplyChain
+# Amazon Supply Chain
+  - Informational Purposes Only
