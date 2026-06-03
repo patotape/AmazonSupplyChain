@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon U.S. Supply Chain — End-to-End Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --amazon-orange: #FF9900;
+    --amazon-dark:   #131921;
+    --amazon-mid:    #232F3E;
+    --amazon-blue:   #146EB4;
+    --amazon-teal:   #00A8A8;
+    --amazon-green:  #00A650;
+    --amazon-red:    #E31837;
+    --accent-yellow: #FFD814;
+    --text-primary:  #F0F4F8;
+    --text-muted:    #8BA0B4;
+    --border:        rgba(255,153,0,0.18);
+    --card-bg:       rgba(35,47,62,0.85);
+    --glow-orange:   0 0 24px rgba(255,153,0,0.35);
+    --glow-blue:     0 0 18px rgba(20,110,180,0.4);
+    --glow-green:    0 0 18px rgba(0,166,80,0.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--amazon-dark);
+    color: var(--text-primary);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% -10%, rgba(255,153,0,0.08) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,153,0,0.04) 39px, rgba(255,153,0,0.04) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,153,0,0.04) 39px, rgba(255,153,0,0.04) 40px);
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    padding: 52px 24px 36px;
+    position: relative;
+  }
+  .header-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--amazon-orange);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: 0.9;
+  }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 8vw, 88px);
+    line-height: 0.92;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #FF9900 0%, #FFD814 50%, #FF9900 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(255,153,0,0.4));
+  }
+  .header-sub {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-top: 14px;
+    letter-spacing: 0.5px;
+  }
+  .header-sub strong { color: var(--amazon-orange); font-weight: 600; }
+
+  .stats-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0;
+    margin: 28px auto 0;
+    max-width: 860px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .stat-item {
+    flex: 1 1 160px;
+    padding: 14px 20px;
+    border-right: 1px solid var(--border);
+    background: rgba(20,27,37,0.7);
+    text-align: center;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--amazon-orange);
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    padding: 18px 24px;
+    margin: 8px auto;
+    max-width: 1200px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── MAIN FLOW ── */
+  .flow-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 12px 24px 60px;
+  }
+
+  .phase {
+    margin-bottom: 6px;
+  }
+
+  /* Phase Header */
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0 10px;
+    position: relative;
+  }
+  .phase-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    color: var(--amazon-dark);
+    background: var(--phase-color, var(--amazon-orange));
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+  .phase-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(18px, 3vw, 26px);
+    letter-spacing: 2px;
+    color: var(--phase-color, var(--amazon-orange));
+  }
+  .phase-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+    text-align: right;
+    max-width: 320px;
+    line-height: 1.5;
+    display: none;
+  }
+  @media(min-width:700px){ .phase-desc { display: block; } }
+
+  .phase-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--phase-color, var(--amazon-orange)) 0%, transparent 100%);
+    opacity: 0.3;
+  }
+
+  /* Nodes Grid */
+  .nodes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    padding-bottom: 4px;
+  }
+
+  .node-card {
+    background: var(--card-bg);
+    border: 1px solid var(--node-color, var(--border));
+    border-left: 3px solid var(--node-color, var(--amazon-orange));
+    border-radius: 6px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .node-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .node-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px var(--node-color, var(--amazon-orange));
+  }
+  .node-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+    display: block;
+    line-height: 1;
+  }
+  .node-title {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+    line-height: 1.3;
+  }
+  .node-detail {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+  .node-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: rgba(255,153,0,0.1);
+    color: var(--amazon-orange);
+    border: 1px solid rgba(255,153,0,0.2);
+    letter-spacing: 0.5px;
+  }
+  .tag.blue { background: rgba(20,110,180,0.15); color: #5BA4D4; border-color: rgba(20,110,180,0.3); }
+  .tag.green { background: rgba(0,166,80,0.12); color: #4DCB7A; border-color: rgba(0,166,80,0.25); }
+  .tag.teal { background: rgba(0,168,168,0.12); color: #5DD0D0; border-color: rgba(0,168,168,0.25); }
+  .tag.red { background: rgba(227,24,55,0.12); color: #F27085; border-color: rgba(227,24,55,0.25); }
+  .tag.yellow { background: rgba(255,216,20,0.1); color: #FFD814; border-color: rgba(255,216,20,0.25); }
+
+  /* Arrow connectors between phases */
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 0;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .flow-arrow svg {
+    opacity: 0.5;
+  }
+
+  /* Special wide node */
+  .node-card.wide {
+    grid-column: span 2;
+  }
+
+  /* ── TECHNOLOGY LAYER ── */
+  .tech-layer {
+    max-width: 1280px;
+    margin: 0 auto 16px;
+    padding: 0 24px;
+  }
+  .tech-header {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: var(--amazon-teal);
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(0,168,168,0.2);
+    padding-bottom: 8px;
+  }
+  .tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tech-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(0,168,168,0.08);
+    border: 1px solid rgba(0,168,168,0.25);
+    color: #5DD0D0;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── RETURNS PATH ── */
+  .returns-section {
+    max-width: 1280px;
+    margin: 0 auto 40px;
+    padding: 0 24px;
+  }
+  .returns-box {
+    background: rgba(227,24,55,0.06);
+    border: 1px solid rgba(227,24,55,0.2);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .returns-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #F27085;
+    margin-bottom: 10px;
+  }
+  .returns-flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .returns-node {
+    background: rgba(227,24,55,0.1);
+    border: 1px solid rgba(227,24,55,0.25);
+    border-radius: 4px;
+    padding: 5px 12px;
+    color: #F27085;
+  }
+  .returns-arrow {
+    color: rgba(227,24,55,0.4);
+    font-size: 14px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+  footer a { color: var(--amazon-orange); text-decoration: none; }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .phase { animation: fadeUp 0.5s ease both; }
+  .phase:nth-child(1)  { animation-delay: 0.05s; }
+  .phase:nth-child(2)  { animation-delay: 0.12s; }
+  .phase:nth-child(3)  { animation-delay: 0.19s; }
+  .phase:nth-child(4)  { animation-delay: 0.26s; }
+  .phase:nth-child(5)  { animation-delay: 0.33s; }
+  .phase:nth-child(6)  { animation-delay: 0.40s; }
+  .phase:nth-child(7)  { animation-delay: 0.47s; }
+  .phase:nth-child(8)  { animation-delay: 0.54s; }
+  .phase:nth-child(9)  { animation-delay: 0.61s; }
+
+  .header { animation: fadeUp 0.5s ease 0s both; }
+  .stats-bar .stat-item { animation: fadeUp 0.4s ease both; }
+  .stats-bar .stat-item:nth-child(1) { animation-delay: 0.1s; }
+  .stats-bar .stat-item:nth-child(2) { animation-delay: 0.15s; }
+  .stats-bar .stat-item:nth-child(3) { animation-delay: 0.2s; }
+  .stats-bar .stat-item:nth-child(4) { animation-delay: 0.25s; }
+  .stats-bar .stat-item:nth-child(5) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="header">
+  <div class="header-eyebrow">End-to-End Logistics Infrastructure · United States · 2025–2026</div>
+  <div class="header-title">Amazon<br>Supply Chain</div>
+  <p class="header-sub">Every touchpoint goods pass through — from <strong>manufacturer</strong> to <strong>customer door</strong></p>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-num">600+</div>
+      <div class="stat-label">U.S. Logistics Sites</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">150</div>
+      <div class="stat-label">Fulfillment Centers (U.S.)</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">553+</div>
+      <div class="stat-label">Delivery Stations</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">1M+</div>
+      <div class="stat-label">Robots Deployed</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">9B+</div>
+      <div class="stat-label">Same/Next-Day Pkgs (2024)</div>
+    </div>
+  </div>
+</header>
+
+<!-- ── LEGEND ── -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#FF9900"></div> Origin &amp; Sourcing</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#146EB4"></div> Inbound Transport</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FFD814"></div> Inventory &amp; Storage</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00A650"></div> Fulfillment Processing</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00A8A8"></div> Sorting &amp; Routing</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6"></div> Air Network</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#F27085"></div> Last Mile</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#E31837"></div> Returns</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MAIN FLOW
+══════════════════════════════════════════════ -->
+<main class="flow-container">
+
+  <!-- ── PHASE 1: Origin & Sourcing ── -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="--phase-color:#FF9900; background:#FF9900;">1</div>
+      <div class="phase-title" style="--phase-color:#FF9900;">Origin &amp; Sourcing</div>
+      <div class="phase-line" style="--phase-color:#FF9900;"></div>
+      <div class="phase-desc">Goods begin at manufacturers &amp; suppliers globally and domestically before entering Amazon's network.</div>
+    </div>
+    <div class="nodes-grid">
+      <div class="node-card" style="--node-color:#FF9900;">
+        <span class="node-icon">🏭</span>
+        <div class="node-title">Overseas Manufacturers</div>
+        <div class="node-detail">Primary production in China, Vietnam, India, Bangladesh &amp; other export nations. Amazon sources &amp; diversifies amid 2025 tariff shifts away from China-only dependence.</div>
+        <div class="node-tags"><span class="tag">China</span><span class="tag">Vietnam</span><span class="tag">India</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FF9900;">
+        <span class="node-icon">🏗️</span>
+        <div class="node-title">Domestic Manufacturers &amp; Brands</div>
+        <div class="node-detail">U.S.-based suppliers, private-label SKUs being reshored amid tariff pressure, and direct brand partners shipping direct to Amazon warehouses.</div>
+        <div class="node-tags"><span class="tag">1P Vendors</span><span class="tag">3P Sellers</span><span class="tag">Private Label</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FF9900;">
+        <span class="node-icon">🛒</span>
+        <div class="node-title">Third-Party Marketplace Sellers</div>
+        <div class="node-detail">Over 60% of Amazon unit sales are from third-party sellers (FBA or FBM). Sellers ship inventory to Amazon FCs or ship directly from their own warehouses (Fulfilled by Merchant).</div>
+        <div class="node-tags"><span class="tag">FBA</span><span class="tag">FBM</span><span class="tag">60%+ of units</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FF9900;">
+        <span class="node-icon">🌿</span>
+        <div class="node-title">Amazon Fresh &amp; Grocery Suppliers</div>
+        <div class="node-detail">Perishable suppliers, Whole Foods vendors, and fresh produce distributors feed temperature-controlled fulfillment pipelines. Local farm partnerships in major metro regions.</div>
+        <div class="node-tags"><span class="tag">Cold Chain</span><span class="tag">Whole Foods</span><span class="tag">Perishables</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF9900" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    <span style="color:rgba(255,153,0,0.4)">INBOUND TRANSPORT</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF9900" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+
+  <!-- ── PHASE 2: Inbound Transport ── -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#146EB4;">2</div>
+      <div class="phase-title" style="--phase-color:#146EB4;">Inbound Transportation</div>
+      <div class="phase-line" style="--phase-color:#146EB4;"></div>
+      <div class="phase-desc">Goods move from origin to Amazon's U.S. distribution network via ocean, air, and road.</div>
+    </div>
+    <div class="nodes-grid">
+      <div class="node-card" style="--node-color:#146EB4;">
+        <span class="node-icon">🚢</span>
+        <div class="node-title">Ocean Freight (Import)</div>
+        <div class="node-detail">Amazon buys bulk ocean freight capacity. Containers enter via major U.S. seaports: Los Angeles, Long Beach, Seattle, Newark, Savannah, Houston. Includes customs clearance &amp; bonded warehouse options.</div>
+        <div class="node-tags"><span class="tag blue">Full Container</span><span class="tag blue">LCL</span><span class="tag blue">Bonded WH</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#146EB4;">
+        <span class="node-icon">✈️</span>
+        <div class="node-title">Air Freight Import</div>
+        <div class="node-detail">High-value or time-sensitive goods arrive via commercial air cargo or Amazon Air Cargo (launched 2024). Enters through major air freight gateways: JFK, LAX, ORD, DFW, CVG (Amazon Air Hub).</div>
+        <div class="node-tags"><span class="tag blue">Amazon Air Cargo</span><span class="tag blue">Commercial Air</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#146EB4;">
+        <span class="node-icon">🏛️</span>
+        <div class="node-title">U.S. Customs &amp; Border Protection</div>
+        <div class="node-detail">Mandatory CBP clearance for all international imports. Amazon utilizes Section 321 de minimis (under scrutiny in 2025), ISFs, and has Customs-Trade Partnership Against Terrorism (C-TPAT) status.</div>
+        <div class="node-tags"><span class="tag blue">CBP</span><span class="tag blue">ISF</span><span class="tag blue">C-TPAT</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#146EB4;">
+        <span class="node-icon">🚛</span>
+        <div class="node-title">Inbound Trucking &amp; Rail</div>
+        <div class="node-detail">Full truckload (FTL), less-than-truckload (LTL), and intermodal rail move goods from ports and domestic suppliers to Receive Centers or Fulfillment Centers. Amazon's carrier network + external 3PL carriers.</div>
+        <div class="node-tags"><span class="tag blue">FTL</span><span class="tag blue">LTL</span><span class="tag blue">Intermodal</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#146EB4;">
+        <span class="node-icon">📦</span>
+        <div class="node-title">Receive Centers (RC)</div>
+        <div class="node-detail">Bulk deconsolidation hubs that receive large vendor shipments, verify inventory, and redistribute to Fulfillment Centers. Reduces FC receiving congestion. Amazon operates ~20 dedicated RCs in the U.S.</div>
+        <div class="node-tags"><span class="tag blue">Deconsolidation</span><span class="tag blue">Quality Check</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#146EB4;">
+        <span class="node-icon">🌡️</span>
+        <div class="node-title">Cold Chain Inbound</div>
+        <div class="node-detail">Temperature-controlled transport for groceries, pharmaceuticals, and perishables. Dedicated refrigerated trucks and cold storage receiving docks at Fresh fulfillment sites.</div>
+        <div class="node-tags"><span class="tag blue">2°–8°C</span><span class="tag blue">Frozen</span><span class="tag blue">Fresh</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFD814" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    <span style="color:rgba(255,216,20,0.4)">STORAGE &amp; INVENTORY</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFD814" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+
+  <!-- ── PHASE 3: Storage & Inventory ── -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#C8A800; color:#000;">3</div>
+      <div class="phase-title" style="--phase-color:#FFD814;">Storage &amp; Inventory Management</div>
+      <div class="phase-line" style="--phase-color:#FFD814;"></div>
+      <div class="phase-desc">Inventory positioned close to demand using AI-driven forecasting across 8 regional clusters.</div>
+    </div>
+    <div class="nodes-grid">
+      <div class="node-card" style="--node-color:#FFD814;">
+        <span class="node-icon">🏢</span>
+        <div class="node-title">Sortable Fulfillment Centers (FC)</div>
+        <div class="node-detail">800,000+ sq ft each. Handle small-to-medium items (books, electronics, apparel). Highly automated with 1M+ robots. 109 sortable FCs in U.S., with 27 more planned. Items stowed by AI to minimize pick distance.</div>
+        <div class="node-tags"><span class="tag yellow">Sortable</span><span class="tag yellow">Automated</span><span class="tag yellow">109 U.S.</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FFD814;">
+        <span class="node-icon">🏬</span>
+        <div class="node-title">Non-Sortable Fulfillment Centers</div>
+        <div class="node-detail">600,000–1M sq ft. Handle oversized &amp; bulky items: furniture, patio equipment, rugs, large appliances. More manual handling required. 116 non-sortable FCs in U.S. + 16 more planned.</div>
+        <div class="node-tags"><span class="tag yellow">Oversized</span><span class="tag yellow">Bulky</span><span class="tag yellow">116 U.S.</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FFD814;">
+        <span class="node-icon">⚡</span>
+        <div class="node-title">Same-Day Fulfillment Sites</div>
+        <div class="node-detail">Smaller urban micro-fulfillment centers in 110+ U.S. metro areas. Stock ~100,000 fast-moving SKUs. Support 1–2 hour delivery. Amazon expanded same-day sites by 60% in 2024. Targeting 4,000+ towns by end of 2025.</div>
+        <div class="node-tags"><span class="tag yellow">Sub-2hr</span><span class="tag yellow">Prime Now</span><span class="tag yellow">110+ metros</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FFD814;">
+        <span class="node-icon">🔬</span>
+        <div class="node-title">Specialty &amp; Hazmat FCs</div>
+        <div class="node-detail">Dedicated facilities for hazardous materials (batteries, chemicals), high-value items, and age-restricted products. Separate safety protocols and compliance management.</div>
+        <div class="node-tags"><span class="tag yellow">Hazmat</span><span class="tag yellow">High-Value</span><span class="tag yellow">Age-Restricted</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FFD814;">
+        <span class="node-icon">❄️</span>
+        <div class="node-title">Amazon Fresh / Cold Storage FCs</div>
+        <div class="node-detail">Temperature-controlled zones within fulfillment centers. Ambient, refrigerated (2–8°C), and frozen (−18°C) storage for groceries. Integrated with Whole Foods supply network.</div>
+        <div class="node-tags"><span class="tag yellow">Fresh</span><span class="tag yellow">Frozen</span><span class="tag yellow">Whole Foods</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#FFD814;">
+        <span class="node-icon">🤖</span>
+        <div class="node-title">Robotics &amp; Automation Systems</div>
+        <div class="node-detail">Sequoia system cuts order processing by 25%. Kiva/Amazon Robotics drive pods. Robotic arms (Cardinal, Sparrow) sort packages. 1M+ robots across the network handle 75% of global delivery volume.</div>
+        <div class="node-tags"><span class="tag yellow">Sequoia</span><span class="tag yellow">Kiva Pods</span><span class="tag yellow">Cardinal</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00A650" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    <span style="color:rgba(0,166,80,0.4)">ORDER PROCESSING</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00A650" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+
+  <!-- ── PHASE 4: Order Processing & Fulfillment ── -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#00A650; color:#000;">4</div>
+      <div class="phase-title" style="--phase-color:#00A650;">Order Processing &amp; Fulfillment</div>
+      <div class="phase-line" style="--phase-color:#00A650;"></div>
+      <div class="phase-desc">Customer clicks "Buy" — Amazon's systems route, pick, pack, and prepare the order in minutes to hours.</div>
+    </div>
+    <div class="nodes-grid">
+      <div class="node-card" style="--node-color:#00A650;">
+        <span class="node-icon">🛍️</span>
+        <div class="node-title">Customer Order Placed</div>
+        <div class="node-detail">Customer orders via Amazon.com app, Alexa, or Buy with Prime on any site. OMS (Order Management System) instantly routes order to optimal FC based on inventory location, customer proximity, and SLA.</div>
+        <div class="node-tags"><span class="tag green">Amazon.com</span><span class="tag green">Alexa</span><span class="tag green">Buy with Prime</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A650;">
+        <span class="node-icon">🗺️</span>
+        <div class="node-title">AI Order Routing Engine</div>
+        <div class="node-detail">Amazon's proprietary OMS evaluates 50+ variables (inventory levels, carrier capacity, regional demand, SLA promise) to select the most cost-effective FC and shipping path in milliseconds.</div>
+        <div class="node-tags"><span class="tag green">ML Routing</span><span class="tag green">Real-Time</span><span class="tag green">SLA Matching</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A650;">
+        <span class="node-icon">🔍</span>
+        <div class="node-title">Pick — Item Retrieval</div>
+        <div class="node-detail">Robot drive units bring shelving pods to stationary pickers. Robotic arms (Sparrow) autonomously pick individual SKUs from bins. Pick rates optimized by Sequoia: 25% faster order processing vs. prior systems.</div>
+        <div class="node-tags"><span class="tag green">Sparrow</span><span class="tag green">Pod-to-Picker</span><span class="tag green">Pick Accuracy</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A650;">
+        <span class="node-icon">📦</span>
+        <div class="node-title">Pack — Packaging &amp; Labeling</div>
+        <div class="node-detail">Items are packed in right-sized boxes selected by AI to minimize void fill and weight. Associates or machines apply shipping labels with embedded tracking barcodes. Custom Amazon packaging with sustainability initiatives (reduced plastic, ship-in-own-container).</div>
+        <div class="node-tags"><span class="tag green">Right-Size Box</span><span class="tag green">Label Gen</span><span class="tag green">Void Fill AI</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A650;">
+        <span class="node-icon">⚖️</span>
+        <div class="node-title">Weigh, Scan &amp; Quality Check</div>
+        <div class="node-detail">Every package is weighed and dimensioned by automated machines (DIM weight billing). Computer vision cameras verify correct item was packed, check for damage. Discrepancies trigger immediate reroute.</div>
+        <div class="node-tags"><span class="tag green">DIM Weight</span><span class="tag green">Computer Vision</span><span class="tag green">QC</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A650;">
+        <span class="node-icon">🚏</span>
+        <div class="node-title">Outbound Staging &amp; Dock Assignment</div>
+        <div class="node-detail">Packages sorted to outbound staging lanes by carrier/destination. Dock scheduling system assigns trailers and time windows. Cross-dock operations for multi-item orders from different FCs.</div>
+        <div class="node-tags"><span class="tag green">Cross-Dock</span><span class="tag green">Dock Scheduling</span><span class="tag green">Multi-FC Merge</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00A8A8" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    <span style="color:rgba(0,168,168,0.4)">SORTATION &amp; MIDDLE MILE</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00A8A8" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+
+  <!-- ── PHASE 5: Sortation & Middle Mile ── -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#00A8A8; color:#000;">5</div>
+      <div class="phase-title" style="--phase-color:#00A8A8;">Sortation &amp; Middle Mile</div>
+      <div class="phase-line" style="--phase-color:#00A8A8;"></div>
+      <div class="phase-desc">Packages move from FCs to regional hubs and then toward delivery stations — sorted by ZIP code along the way.</div>
+    </div>
+    <div class="nodes-grid">
+      <div class="node-card" style="--node-color:#00A8A8;">
+        <span class="node-icon">🔀</span>
+        <div class="node-title">Sortation Centers (SC)</div>
+        <div class="node-detail">Packages arrive from FCs and are sorted by destination ZIP code. Associates &amp; automated sorters consolidate packages onto trailers headed to specific delivery stations or postal carriers. ~200+ U.S. sortation centers operating 24/7.</div>
+        <div class="node-tags"><span class="tag teal">ZIP Sort</span><span class="tag teal">Auto Conveyor</span><span class="tag teal">200+ sites</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A8A8;">
+        <span class="node-icon">🚛</span>
+        <div class="node-title">Amazon Middle-Mile Trucking</div>
+        <div class="node-detail">Amazon's owned/leased linehaul fleet moves packages between FCs, SCs, and delivery stations. AI-optimized route scheduling, dynamic load planning, and continuous moves programs reduce empty miles.</div>
+        <div class="node-tags"><span class="tag teal">Linehaul</span><span class="tag teal">Amazon Fleet</span><span class="tag teal">Route Optimization</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A8A8;">
+        <span class="node-icon">🚂</span>
+        <div class="node-title">Rail &amp; Intermodal Middle Mile</div>
+        <div class="node-detail">Amazon leverages intermodal rail for longer-distance, lower-cost middle-mile transport between regional clusters — especially coast-to-coast lanes where air would be cost-prohibitive.</div>
+        <div class="node-tags"><span class="tag teal">Intermodal</span><span class="tag teal">Long-Haul</span><span class="tag teal">Cost Optimization</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A8A8;">
+        <span class="node-icon">🗂️</span>
+        <div class="node-title">Regional Distribution Centers (DC)</div>
+        <div class="node-detail">Eight regional logistics clusters introduced under Amazon's re-architecture. Each region operates semi-independently to cut cross-country miles and enable same/next-day delivery at lower cost-per-unit (−$0.50/unit achieved).</div>
+        <div class="node-tags"><span class="tag teal">8 Regions</span><span class="tag teal">Regionalization</span><span class="tag teal">Cost Savings</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#00A8A8;">
+        <span class="node-icon">🤝</span>
+        <div class="node-title">Third-Party Carrier Partners</div>
+        <div class="node-detail">UPS, FedEx, and USPS handle overflow volume, rural routes, and international parcels. Amazon has reduced USPS dependence by 20% in 2026 as its own rural network expands.</div>
+        <div class="node-tags"><span class="tag teal">UPS</span><span class="tag teal">FedEx</span><span class="tag teal">USPS (reducing)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PHASE 6: Air Network ── -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#8B5CF6;">6</div>
+      <div class="phase-title" style="--phase-color:#8B5CF6;">Amazon Air Network</div>
+      <div class="phase-line" style="--phase-color:#8B5CF6;"></div>
+      <div class="phase-desc">A private cargo airline connecting major fulfillment regions for overnight and time-critical packages.</div>
+    </div>
+    <div class="nodes-grid">
+      <div class="node-card" style="--node-color:#8B5CF6;">
+        <span class="node-icon">🛫</span>
+        <div class="node-title">Amazon Air Hub (CVG)</div>
+        <div class="node-detail">Primary Amazon Air hub at Cincinnati/Northern Kentucky Airport (CVG) — Amazon's purpose-built "Prime Air Hub." Serves as the central air node connecting regional FC clusters overnight. 2M+ sq ft campus.</div>
+        <div class="node-tags"><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">CVG Hub</span><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">2M sq ft</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#8B5CF6;">
+        <span class="node-icon">✈️</span>
+        <div class="node-title">Amazon Air Fleet</div>
+        <div class="node-detail">100+ freighter aircraft (Boeing 737-800, 767-300F). Operated by Air Transport International, Atlas Air, and Sun Country under Amazon contracts. Flights connect all 8 U.S. regions nightly.</div>
+        <div class="node-tags"><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">100+ Aircraft</span><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">B767/B737</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#8B5CF6;">
+        <span class="node-icon">🛬</span>
+        <div class="node-title">Regional Air Gateways</div>
+        <div class="node-detail">Secondary air hubs: Lakeland (LAL, FL), San Bernardino (SBD, CA), Wilmington (ILN, OH), Lehigh Valley (ABE, PA), and others. Receive overnight flights and feed regional delivery station networks.</div>
+        <div class="node-tags"><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">LAL</span><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">SBD</span><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">ABE</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#8B5CF6;">
+        <span class="node-icon">📦</span>
+        <div class="node-title">Amazon Air Cargo (3P Service)</div>
+        <div class="node-detail">Commercially launched Sept. 2024 — Amazon sells spare belly capacity to third-party shippers. FTL charters, block space agreements, and ad hoc bookings via digital portal. Money-back on-time guarantee added Dec. 2025.</div>
+        <div class="node-tags"><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">3P Cargo</span><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">Charter</span><span class="tag" style="background:rgba(139,92,246,0.15);color:#C4B5FD;border-color:rgba(139,92,246,0.3)">Block Space</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-arrow">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F27085" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    <span style="color:rgba(242,112,133,0.4)">LAST MILE DELIVERY</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F27085" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+
+  <!-- ── PHASE 7: Last Mile ── -->
+  <div class="phase">
+    <div class="phase-header">
+      <div class="phase-num" style="background:#E31837;">7</div>
+      <div class="phase-title" style="--phase-color:#F27085;">Last-Mile Delivery</div>
+      <div class="phase-line" style="--phase-color:#F27085;"></div>
+      <div class="phase-desc">The final leg — from delivery station to the customer's door. The most complex &amp; highest-cost phase.</div>
+    </div>
+    <div class="nodes-grid">
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🏪</span>
+        <div class="node-title">Delivery Stations (DS)</div>
+        <div class="node-detail">Hyper-local final-mile hubs positioned &lt;20 miles from end customers. Receive pre-sorted packages, assign to optimized routes, and load delivery vehicles in sequence. 553+ active U.S. delivery stations; 116 more planned. Fastest-growing facility type in 2025.</div>
+        <div class="node-tags"><span class="tag red">553+ Active</span><span class="tag red">&lt;20mi radius</span><span class="tag red">Route Assigned</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🚐</span>
+        <div class="node-title">Delivery Service Partners (DSP)</div>
+        <div class="node-detail">~3,500 small delivery companies contracted exclusively to Amazon. Each operates 20–40 branded vans with Amazon Logistics app. DSP drivers handle the majority of U.S. residential deliveries.</div>
+        <div class="node-tags"><span class="tag red">~3,500 DSPs</span><span class="tag red">Branded Vans</span><span class="tag red">App-Guided</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🚗</span>
+        <div class="node-title">Amazon Flex</div>
+        <div class="node-detail">Gig-economy program: independent contractors use personal vehicles. Earn $18–$25/hr. Primarily used for peak demand (Prime Day, holidays), same-day blocks, and Amazon Fresh grocery delivery.</div>
+        <div class="node-tags"><span class="tag red">Gig Workers</span><span class="tag red">$18–$25/hr</span><span class="tag red">Peak Demand</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🛺</span>
+        <div class="node-title">Amazon Logistics (AMZL)</div>
+        <div class="node-detail">Amazon's own employed-driver fleet. Handles a growing share of U.S. deliveries — Amazon now delivers more of its own packages than it hands off to UPS or FedEx. Electric delivery vans (Rivian) being deployed at scale.</div>
+        <div class="node-tags"><span class="tag red">Employed Drivers</span><span class="tag red">Rivian EVs</span><span class="tag red">Majority of U.S.</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🌾</span>
+        <div class="node-title">Rural &amp; Remote Delivery</div>
+        <div class="node-detail">Amazon expanding rural coverage — targeting 4,000+ small towns &amp; rural areas by end of 2025. USPS used for remote addresses (reducing contract 20% in 2026 as Amazon builds own rural network). Hub-and-spoke rural micro-depots.</div>
+        <div class="node-tags"><span class="tag red">4,000+ towns</span><span class="tag red">USPS Hybrid</span><span class="tag red">Micro-Depots</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🚁</span>
+        <div class="node-title">Amazon Prime Air (Drones)</div>
+        <div class="node-detail">MK30 drones deliver packages &lt;5 lbs in under 30 min. Operational in College Station TX, Lockeford CA, UK, Italy. Scaling to more U.S. cities in 2026 per CEO announcement. FAA BVLOS approvals expanding.</div>
+        <div class="node-tags"><span class="tag red">MK30 Drone</span><span class="tag red">&lt;5 lb</span><span class="tag red">&lt;30 min</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🏙️</span>
+        <div class="node-title">Amazon Lockers &amp; Pickup Points</div>
+        <div class="node-detail">Amazon Hub Lockers in 900+ cities inside Whole Foods, Rite Aid, 7-Eleven, and other retailers. Counter service at Amazon Go &amp; Amazon Fresh stores. Alternative to home delivery — reduces failed deliveries.</div>
+        <div class="node-tags"><span class="tag red">Hub Lockers</span><span class="tag red">900+ cities</span><span class="tag red">Whole Foods</span></div>
+      </div>
+      <div class="node-card" style="--node-color:#F27085;">
+        <span class="node-icon">🏠</span>
+        <div class="node-title">Customer Doorstep</div>
+        <div class="node-detail">Final delivery confirmed via photo proof + GPS stamp. Amazon Key enables in-garage or in-home delivery for subscribed customers. Real-time tracking in app with 2-hour delivery windows. 310M+ active U.S. customers served.</div>
+        <div class="node-tags"><span class="tag red">Photo Proof</span><span class="tag red">Amazon Key</span><span class="tag red">310M users</span></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── TECHNOLOGY LAYER ── -->
+<div class="tech-layer">
+  <div class="tech-header">⚙ ENABLING TECHNOLOGY LAYER</div>
+  <div class="tech-grid">
+    <div class="tech-pill">AWS Cloud Infrastructure</div>
+    <div class="tech-pill">AI Demand Forecasting</div>
+    <div class="tech-pill">Real-Time Inventory OMS</div>
+    <div class="tech-pill">Route Optimization ML</div>
+    <div class="tech-pill">Computer Vision QC</div>
+    <div class="tech-pill">Sequoia Robotics System</div>
+    <div class="tech-pill">Amazon Robotics (Kiva)</div>
+    <div class="tech-pill">Digital Twin Warehousing</div>
+    <div class="tech-pill">Predictive Replenishment</div>
+    <div class="tech-pill">Carrier Rate Shopping</div>
+    <div class="tech-pill">Alexa Voice Commerce</div>
+    <div class="tech-pill">GPS/Last-Mile Tracking</div>
+    <div class="tech-pill">Amazon Shipping API</div>
+    <div class="tech-pill">Supply Chain Visibility Platform</div>
+    <div class="tech-pill">Agentic AI (2025+)</div>
+    <div class="tech-pill">Dynamic Pricing Engine</div>
+  </div>
+</div>
+
+<!-- ── RETURNS PATH ── -->
+<div class="returns-section">
+  <div class="returns-box">
+    <div class="returns-title">↩ REVERSE LOGISTICS — RETURNS PATHWAY</div>
+    <div class="returns-flow">
+      <div class="returns-node">Customer Initiates Return</div>
+      <div class="returns-arrow">→</div>
+      <div class="returns-node">UPS / Kohl's / Whole Foods Drop-Off OR DSP Pickup</div>
+      <div class="returns-arrow">→</div>
+      <div class="returns-node">Returns Processing Center (RPC)</div>
+      <div class="returns-arrow">→</div>
+      <div class="returns-node">Inspection &amp; Grading</div>
+      <div class="returns-arrow">→</div>
+      <div class="returns-node">Resellable → Back to FC Inventory</div>
+      <div class="returns-arrow">→</div>
+      <div class="returns-node">Amazon Warehouse Deals / Liquidation / Vendor Return / Disposal</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p>Sources: Amazon Supply Chain Services · About Amazon Facilities · Logistics Viewpoints · FreightWaves · MWPVL International · INFORMS Journal on Applied Analytics · Threecolts · EVR Mag · CRE Daily · FreightAmigo · 2025–2026 Data</p>
+  <p style="margin-top:6px; color:rgba(139,160,180,0.5)">Visualization compiled from publicly available data. All figures approximate. Last updated: June 2026.</p>
+</footer>
+
+</body>
+</html>
